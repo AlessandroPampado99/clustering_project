@@ -103,7 +103,7 @@ class Clustering():
         # Rimetto i nomi delle colonne iniziali per pulizia dei dati di output
         self.centres_with_labels = pd.DataFrame(self.centres_with_labels).set_axis([column for column in data], axis=1)
         # Aggiungo etichetta per sottolineare di quale cluster sono i centroidi
-        self.centres_with_labels = pd.concat((self.centres_with_labels, pd.Series([i for i in range(0, self.n_clusters)]).rename("Index_clustering"), pd.Series(clustering.medoid_indices_).rename("Index_medoid")), axis=1)
+        self.centres_with_labels = pd.concat((self.centres_with_labels, pd.Series([i for i in range(0, self.n_clusters)]).rename("Index_clustering"), pd.Series(clustering.medoid_indices_).rename("Index_representative_element")), axis=1)
   
         
     def substitution (self, clustering, data_norm, data):
@@ -113,7 +113,7 @@ class Clustering():
         self.centres_with_labels = data.iloc[t["ind_rep_row"]].set_index(t["Index_clustering"])
         t = t.set_index("Index_clustering")
         # Aggiungo etichetta per sottolineare di quale cluster sono gli elementi rappresentativi
-        self.centres_with_labels = pd.concat((self.centres_with_labels, t["ind_rep_row"].rename("Index_closest_element")), axis=1)
+        self.centres_with_labels = pd.concat((self.centres_with_labels, t["ind_rep_row"].rename("Index_representative_element")), axis=1)
         self.centres_with_labels = self.centres_with_labels.sort_index()
         self.centres_with_labels = pd.concat((self.centres_with_labels.reset_index(drop=True), pd.Series(self.centres_with_labels.index)), axis=1)
        
@@ -166,14 +166,14 @@ class Clustering():
             # Sostituisci la riga il cui cluster coincide con quello dell'elemento estremo
             self.centres_with_labels.iloc [np.where(self.centres_with_labels['Index_clustering'] == extreme_element['Index_clustering'])[0][0]] = extreme_element
         elif kmeans == "kmedoids":
-            extreme_element = pd.concat((extreme_element, pd.Series(extreme_element.name).set_axis(["Index_medoid"])))
+            extreme_element = pd.concat((extreme_element, pd.Series(extreme_element.name).set_axis(["Index_representative_element"])))
             self.centres_with_labels.iloc [np.where(self.centres_with_labels['Index_clustering'] == extreme_element['Index_clustering'])[0][0]] = extreme_element
         elif kmeans == "substitution":
-            self.centres_with_labels = self.centres_with_labels.set_index("Index_closest_element")
+            self.centres_with_labels = self.centres_with_labels.set_index("Index_representative_element")
             self.centres_with_labels.iloc [np.where(self.centres_with_labels['Index_clustering'] == extreme_element['Index_clustering'])[0][0]] = extreme_element
             self.centres_with_labels = pd.concat((self.centres_with_labels.reset_index(drop=True), pd.Series(self.centres_with_labels.index)), axis=1)
             # Correggo l'elemento più vicino al centroide (ora è quello estremo, l'indice deve essere il suo)
-            self.centres_with_labels["Index_closest_element"][np.where(self.centres_with_labels['Index_clustering'] == extreme_element['Index_clustering'])[0][0]] = extreme_element.name
+            self.centres_with_labels["Index_representative_element"][np.where(self.centres_with_labels['Index_clustering'] == extreme_element['Index_clustering'])[0][0]] = extreme_element.name
         
 
 # Metodo per l'adding criterion
@@ -188,14 +188,14 @@ class Clustering():
             self.centres_with_labels = pd.concat((self.centres_with_labels, pd.DataFrame(extreme_element).transpose()), axis=0)
             centres = MinMaxScaler().fit_transform(self.centres_with_labels.drop('Index_clustering', axis=1))
         elif kmeans == "kmedoids":
-            extreme_element = pd.concat((extreme_element, pd.Series(extreme_element.name).set_axis(["Index_medoid"])))
+            extreme_element = pd.concat((extreme_element, pd.Series(extreme_element.name).set_axis(["Index_representative_element"])))
             self.centres_with_labels = pd.concat((self.centres_with_labels, pd.DataFrame(extreme_element).transpose()), axis=0)
-            centres = MinMaxScaler().fit_transform(self.centres_with_labels.drop(['Index_clustering', 'Index_medoid'], axis=1))
+            centres = MinMaxScaler().fit_transform(self.centres_with_labels.drop(['Index_clustering', 'Index_representative_element'], axis=1))
         elif kmeans == "substitution":
-            self.centres_with_labels = self.centres_with_labels.set_index("Index_closest_element")
+            self.centres_with_labels = self.centres_with_labels.set_index("Index_representative_element")
             # Aggiungo l'elemento estremo
             self.centres_with_labels = pd.concat((self.centres_with_labels, pd.DataFrame(extreme_element).transpose()), axis=0)
-            self.centres_with_labels.index.names = ['Index_closest_element']
+            self.centres_with_labels.index.names = ['Index_representative_element']
             # Mi definisco anche il vettore con i soli centri
             centres = MinMaxScaler().fit_transform(self.centres_with_labels.drop('Index_clustering',  axis=1))
             self.centres_with_labels = pd.concat((self.centres_with_labels.reset_index(drop=True), pd.Series(self.centres_with_labels.index)), axis=1)

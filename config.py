@@ -26,6 +26,11 @@ class Config():
         else:
             self.nome_colonne_da_eliminare = self.parser.get("INPUT", "nome_colonne_da_eliminare") 
         
+        if "[" in self.parser.get("INPUT", "nome_colonne_non_attributi"):
+            self.nome_colonne_non_attributi = eval(self.parser.get("INPUT", "nome_colonne_non_attributi")) 
+        else:
+            self.nome_colonne_non_attributi = self.parser.get("INPUT", "nome_colonne_non_attributi") 
+        
         self.timesteps = eval(self.parser.get("CLUSTERING", "timesteps"))
         self.attributes = eval(self.parser.get("CLUSTERING", "attributes"))
         

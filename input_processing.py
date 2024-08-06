@@ -39,8 +39,6 @@ class Input_processing():
         
         
     def input_reader(self):
-        
-        
         if self.parser.nome_excel == str():
             if self.parser.nome_sheet == str():
                 self.data = pd.read_csv(self.parser.path + "/" + self.parser.nome_csv)
@@ -58,8 +56,16 @@ class Input_processing():
             
         if self.parser.nome_colonne != list():
             self.data.columns = self.parser.nome_colonne
-        if self.parser.nome_colonne_da_eliminare != list():
+        if self.parser.nome_colonne_non_attributi != str():
+            self.data_non_attributes = self.data[self.parser.nome_colonne_non_attributi]
+        else:
+            self.data_non_attributes = pd.DataFrame()
+        if self.parser.nome_colonne_da_eliminare != str():
             self.data = self.data.drop(self.parser.nome_colonne_da_eliminare, axis=1)
+
+        else:
+            self.data_non_attributes = str()
+            LOGGER.info('Tutti gli elementi di interesse sono attributi di clustering')
         
         # To delete rows with nan elements
         self.data = self.data.dropna()
@@ -74,6 +80,7 @@ class Input_processing():
             for colonna in self.parser.nome_colonne_da_eliminare:
                 self.parser.nome_colonne.remove(colonna)
             self.parser.nome_colonne = [j + "_" + str(i) for j in self.parser.nome_colonne for i in range(0, self.parser.timesteps)]
+            nome_colonne_non_attributi = [j + "_" + str(i) for j in self.parser.nome_colonne_non_attributi for i in range(0, self.parser.timesteps)]
             # data_reshaped servirà da base al nuovo DataFrame, ha infatti il numero di righe corretto
                 # Ogni colonna contiene tutti i timesteps per ogni attributo
             data_reshaped = np.zeros((int(len(self.data)/(self.parser.timesteps)), 1))
@@ -82,6 +89,16 @@ class Input_processing():
                 data_reshaped = np.concatenate((data_reshaped,column_reshaped), axis=1)
             self.data = pd.DataFrame(data_reshaped[:,1:])
             self.data.columns = self.parser.nome_colonne
+            
+            if self.parser.nome_colonne_non_attributi != str():
+                # Analogamente per i non-attributi
+                data_reshaped = np.zeros((int(len(self.data_non_attributes)/(self.parser.timesteps)), 1))
+                for column in self.data_non_attributes:
+                    column_reshaped = np.reshape(np.array(self.data_non_attributes[column]), (int(len(self.data_non_attributes)/(self.parser.timesteps)),self.parser.timesteps), order="C")
+                    data_reshaped = np.concatenate((data_reshaped,column_reshaped), axis=1)
+                self.data_non_attributes = pd.DataFrame(data_reshaped[:,1:])
+                self.data_non_attributes.columns = nome_colonne_non_attributi
+            
     
     def clustering_process(self):
         # Ciclo for per i diversi algoritmi

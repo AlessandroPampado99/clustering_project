@@ -26,4 +26,4 @@ from output_writer import Output_Writer
 
 config = Config()
 input_processing = Input_processing(config)
-output_writer = Output_Writer(input_processing.results, input_processing.data, input_processing.time, config)
+output_writer = Output_Writer(input_processing.results, input_processing.data, input_processing.data_non_attributes, input_processing.time, config)

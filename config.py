@@ -9,38 +9,37 @@ import logging
 from configparser import ConfigParser
 
 # Classe per la configurazione iniziale dei dati di input
+        
 class Config():
-    
     def __init__(self):
         self.parser = ConfigParser()
-        self.parser.read("./config/application.ini")
+        self.parser.read("C:\\Users\\aless\\Desktop\\PhD_Pisa\\2024_01_08\\clustering_project\\config\\application.ini")
         
-        self.nome_csv = self.parser.get("INPUT", "nome_csv")
-        self.nome_excel = self.parser.get("INPUT", "nome_excel")
-        self.path = self.parser.get("INPUT", "path")
-        self.nome_sheet = self.parser.get("INPUT", "nome_sheet")
+        self.init()
         
-        self.nome_colonne = eval(self.parser.get("INPUT", "nome_colonne"))
-        if "[" in self.parser.get("INPUT", "nome_colonne_da_eliminare"):
-            self.nome_colonne_da_eliminare = eval(self.parser.get("INPUT", "nome_colonne_da_eliminare")) 
-        else:
-            self.nome_colonne_da_eliminare = self.parser.get("INPUT", "nome_colonne_da_eliminare") 
-        
-        if "[" in self.parser.get("INPUT", "nome_colonne_non_attributi"):
-            self.nome_colonne_non_attributi = eval(self.parser.get("INPUT", "nome_colonne_non_attributi")) 
-        else:
-            self.nome_colonne_non_attributi = self.parser.get("INPUT", "nome_colonne_non_attributi") 
-        
-        self.timesteps = eval(self.parser.get("CLUSTERING", "timesteps"))
-        self.attributes = eval(self.parser.get("CLUSTERING", "attributes"))
-        
-        self.algorithms = eval(self.parser.get("CLUSTERING", "algoritmo"))
-        self.n_clusters = eval(self.parser.get("CLUSTERING", "n_clusters_list"))
-        
-        self.extreme_scenario = eval(self.parser.get("CLUSTERING", "extreme_scenario"))
-        self.weight = (self.parser.get("CLUSTERING", "weight"))
-        
-        self.date = eval(self.parser.get("OUTPUT", "date"))
-        self.initial_date = self.parser.get("OUTPUT","initial_date")
-        self.output_name = self.parser.get("OUTPUT","output_name")
-        self.plot = eval(self.parser.get("OUTPUT", "plot"))
+#%% Section for the workflow of the system
+    def init(self):
+        self.set_attributes()
+
+#%% Method to dinamically read the parameters in the config file
+    def set_attributes(self):
+        for section in self.parser.sections():
+            for key in self.parser[section]:
+                self.attribute_definition(key, self.parse_value(self.parser[section][key]))
+
+#%% Method to understand the type of the parsed value
+    def parse_value(self, value):
+        try:
+            # Try to evaluate the value
+            evaluated_value = eval(value)
+            # If the evaluated value is not a string, return it
+            if not isinstance(evaluated_value, str):
+                return evaluated_value
+        except:
+            # If evaluation fails, return the original string
+            pass
+        return value
+
+#%% Method to set the attribute of config
+    def attribute_definition(self, key, value):
+        setattr(self, key, value)

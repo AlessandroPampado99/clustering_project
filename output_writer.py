@@ -12,6 +12,12 @@ import os
 from datetime import datetime
 import matplotlib.pyplot as plt
 
+LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -10s %(funcName) '
+              '-10s %(lineno) -5d: %(message)s')
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+logging.getLogger("Clustering").setLevel(logging.WARNING)
+
 
 class Output_Writer:
     
@@ -53,7 +59,8 @@ class Output_Writer:
             self.plot(output_path)
             
         # Aggiungo gli attributi richiesti tramite data iniziale
-        self.add_attributes()
+        if not self.data_non_attributes.empty:
+            self.add_attributes()
         
         # Stampo per ogni foglio i vari dati
         if self.date:
@@ -62,6 +69,7 @@ class Output_Writer:
         
         # Stampo i risultati
         self.print_data(now)
+        
         self.print_results(now)
         
         
@@ -91,19 +99,23 @@ class Output_Writer:
 #%% Sezione per il print dei risultati
     # Metodo per printare i dati iniziali
     def print_data(self, now):
+        vecchio_now = datetime.now()
         intro = pd.DataFrame(["Segue il Dataset dei dati iniziali"])
         with pd.ExcelWriter("./output/" + now + "/" + self.output_name, engine="openpyxl") as writer:
             intro.to_excel(writer, sheet_name= "Data", header=False, index=False) # Stampo l'intro nella prima pagina
         with pd.ExcelWriter("./output/" + now + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:
             # Apro in modalità append e con overlay, in modo da scrivere sopra ad uno stesso foglio e non sovrascrivere
             self.data.to_excel(writer, sheet_name = "Data", float_format="%.4f", startrow = 1)  
+        LOGGER.info(f"Stampati i dati in {datetime.now()-vecchio_now}s")
      
     # Metodo per printare i risultati
     def print_results(self, now):
         index = dict()
+        vecchio_now = datetime.now()
         with pd.ExcelWriter("./output/" + now + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:                
             for algorithm, list_results in self.results.items():
                 for n_days, object_clustering in list_results.items():
+                    vecchio_now = datetime.now()
                     if algorithm == self.algorithms[0]: # Se ho il primo algoritmo, stampo l'intro come prima riga
                         intro = pd.DataFrame(["Seguono i clusters per gli algoritmi, in ordine, " + "-".join(self.algorithms)])
                         intro.to_excel(writer, sheet_name= n_days, header=False, index=False)
@@ -113,6 +125,8 @@ class Output_Writer:
                     index[n_days] = index[n_days] + 1
                     object_clustering.centres_with_labels.to_excel(writer, sheet_name=n_days, float_format="%4f", startrow=index[n_days])
                     index[n_days] = index[n_days] + len(object_clustering.centres_with_labels) + 2
+                    
+                    LOGGER.info(f"Stampati i risultati di {algorithm} con {n_days} clusters in {datetime.now() - vecchio_now}")
          
         self.time = pd.DataFrame.from_dict(self.time, orient='index', columns=["computational time"])
         with pd.ExcelWriter("./output/" + now + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:

@@ -33,17 +33,17 @@ class Clustering():
         
 #%% Sezione di costruzione della classe
         
-    def __init__(self, n_clusters, data, kmeans, timesteps, attributes, weight, extreme_periods, columns):
+    def __init__(self, n_clusters, data, kmeans, timesteps, attributes, weight, n_years, extreme_periods, columns):
         self.n_clusters = n_clusters
         self.n_extreme_periods = 0
         self.weight = weight
         self.timesteps = timesteps
         
-        self.init(kmeans, data, extreme_periods)
+        self.init(kmeans, data, extreme_periods, n_years)
         
 #%% Sezione di flusso logico della classe
         
-    def init(self, kmeans, data, extreme_periods):
+    def init(self, kmeans, data, extreme_periods, n_years):
         # Normalizzazione
         data_norm = MinMaxScaler().fit_transform(data)
 
@@ -73,13 +73,13 @@ class Clustering():
                     self.extreme_periods_adding(key, value, kmeans, data_norm)
                 
         # Metodo per il calcolo del peso dei cluster
-        self.weight_definition()
+        self.weight_definition(n_years)
                 
 #%% Sezione per la definzione del peso     
-    def weight_definition (self):
+    def weight_definition (self, n_years):
         if self.weight == "cluster_frequency":
             # Calcola il peso come numero di elementi per ogni cluster
-            weights = np.bincount(self.data_with_labels['Index_clustering'])
+            weights = np.bincount(self.data_with_labels['Index_clustering']) / n_years
             self.centres_with_labels = pd.concat((self.centres_with_labels, pd.Series(weights).rename("Weight")), axis=1)
 
 #%% Sezione per la definizione dell'algoritmo

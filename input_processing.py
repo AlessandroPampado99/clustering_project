@@ -15,7 +15,7 @@ LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -10s %(funcName) '
               '-10s %(lineno) -5d: %(message)s')
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
-logging.getLogger("PLC").setLevel(logging.WARNING)
+logging.getLogger("Clustering").setLevel(logging.WARNING)
 
 class Input_processing():
     def __init__(self, parser):
@@ -107,9 +107,11 @@ class Input_processing():
             for n in range(self.parser.n_clusters[0], self.parser.n_clusters[-1]+1):
                 beginning = datetime.now() 
                 # ciclo per i diversi giorni rappresentativi (da implementare una funzionalità per far variare i criteria, nel caso)
-                self.results[algoritmo][str(n) + "_clusters"]  = Clustering(n, self.data, algoritmo, self.parser.timesteps, self.parser.attributes, self.parser.weight, self.parser.extreme_scenario, self.parser.nome_colonne)
+                self.results[algoritmo][str(n) + "_clusters"]  = Clustering(n, self.data, algoritmo, self.parser.timesteps, self.parser.attributes, self.parser.weight, self.parser.n_years, self.parser.extreme_scenario, self.parser.nome_colonne)
                 end = datetime.now()
                 self.time[algoritmo + "_" + str(n) + "_clusters"] = str(end-beginning)
+                
+                LOGGER.info(f"{algoritmo} con {n} clusters completato in {str(end-beginning)}s")
              
         
             

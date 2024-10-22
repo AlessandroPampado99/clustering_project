@@ -19,7 +19,9 @@ from sklearn import metrics
 from yellowbrick.cluster import SilhouetteVisualizer, KElbowVisualizer
 from sklearn.preprocessing import MinMaxScaler
 
-
+###############################################################################################################
+############################################# CLUSTERING ######################################################
+###############################################################################################################
 
 class Clustering():
     
@@ -63,7 +65,7 @@ class Clustering():
                 self.kmeans (clustering, data)
             else:
                 self.substitution (clustering, data_norm, data)
-          
+        
         # Metodo per gli scenari estremi
         for key, list_values in extreme_periods.items():
             for value in list_values:
@@ -205,5 +207,50 @@ class Clustering():
         
         for row, element in enumerate(data_norm):
             self.data_with_labels.loc[row, 'Index_clustering'] = np.where(np.sum((data_norm[row] - centres)**2, axis=1)**1/2 == (np.sum((data_norm[row] - centres)**2, axis=1)**1/2).min())[0][0]
+        
+###############################################################################################################
+########################################## AVERAGE PROFILES ###################################################
+###############################################################################################################
+
+#%% Class average profiles
+class AverageProfiles():
+    def __init__(self, parser, data, timesteps, attributes, columns):
+        self.parser = parser
+        self.data = data
+        self.timesteps = timesteps
+        self.attributes = attributes
+        self.columns = columns
+        
+        self.init()
+        
+    def init(self):
+        weight = self.weight_definition()
+        self.average_profiles_evaluation(weight)
+        
+        
+    def weight_definition(self):
+        weight = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        return weight
+    
+    def average_profiles_evaluation(self, weight):
+        # Set the date for all the Date (here instead of post-processing)
+        Date = pd.date_range(start=self.parser.initial_date, periods=len(self.data), freq='D')
+        self.data.index = Date
+        
+        # I group data based on months
+        self.data['month'] = Date.month
+        
+        # I evaluate the average profiles
+        mean_profiles = self.data.groupby('month').mean()
+        
+        # I evaluate the date for the average profiles
+        Date_mean_profiles = pd.date_range(start=self.parser.initial_date, periods=len(mean_profiles), freq='ME')
+        mean_profiles.index = Date_mean_profiles
+        
+        # I add the column weight
+        mean_profiles['weight'] = weight
+        
+        # I set the average profiles as centres_with_labels
+        self.centres_with_labels = mean_profiles
         
         

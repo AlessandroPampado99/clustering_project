@@ -84,7 +84,7 @@ class Output_Writer:
         
         for algorithm, list_results in self.results.items(): # Spacchetto i risultati per algoritmo
             for n_days, object_clustering in list_results.items(): # Spacchetto ogni caso con n giorno
-                if algorithm != "kmeans": # Se avessi il kmeans non potrei trovare la data
+                if algorithm not in  ["kmeans", "average"]: # Se avessi il kmeans non potrei trovare la data
                     for i, element in object_clustering.centres_with_labels.iterrows(): # Spacchetto i medoids/elementi vicini al centroide
                         # Associo la data corretta sostituendo l'indice con la data corrispondente al giorno (trovato tramite la colonna apposita Index_%)
                         # Valido sia per kmedoids che substitution

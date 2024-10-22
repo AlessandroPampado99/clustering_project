@@ -6,6 +6,7 @@ Created on Fri Jun 14 15:47:49 2024
 """
 
 from clustering import Clustering
+from clustering import AverageProfiles
 import pandas as pd
 import numpy as np
 import logging
@@ -102,16 +103,22 @@ class Input_processing():
     
     def clustering_process(self):
         # Ciclo for per i diversi algoritmi
-        for algoritmo in self.parser.algorithms:  
-            # ciclo for per il numero di giorni rappresentativi
-            for n in range(self.parser.n_clusters[0], self.parser.n_clusters[-1]+1):
-                beginning = datetime.now() 
-                # ciclo per i diversi giorni rappresentativi (da implementare una funzionalità per far variare i criteria, nel caso)
-                self.results[algoritmo][str(n) + "_clusters"]  = Clustering(n, self.data, algoritmo, self.parser.timesteps, self.parser.attributes, self.parser.weight, self.parser.n_years, self.parser.extreme_scenario, self.parser.nome_colonne)
+        for algoritmo in self.parser.algorithms:
+            if algoritmo.lower() == 'average':
+                beginning = datetime.now()
+                self.results['average']['12_clusters'] = AverageProfiles(self.parser, self.data, self.parser.timesteps, self.parser.attributes, self.parser.nome_colonne)
                 end = datetime.now()
-                self.time[algoritmo + "_" + str(n) + "_clusters"] = str(end-beginning)
-                
-                LOGGER.info(f"{algoritmo} con {n} clusters completato in {str(end-beginning)}s")
+                self.time['average_12_clusters'] = str(end-beginning)
+                LOGGER.info(f"{algoritmo} completato in {str(end-beginning)}s")
+            else:
+                # ciclo for per il numero di giorni rappresentativi
+                for n in range(self.parser.n_clusters[0], self.parser.n_clusters[-1]+1):
+                    beginning = datetime.now() 
+                    # ciclo per i diversi giorni rappresentativi (da implementare una funzionalità per far variare i criteria, nel caso)
+                    self.results[algoritmo][str(n) + "_clusters"]  = Clustering(n, self.data, algoritmo, self.parser.timesteps, self.parser.attributes, self.parser.weight, self.parser.n_years, self.parser.extreme_scenario, self.parser.nome_colonne)
+                    end = datetime.now()
+                    self.time[algoritmo + "_" + str(n) + "_clusters"] = str(end-beginning)            
+                    LOGGER.info(f"{algoritmo} con {n} clusters completato in {str(end-beginning)}s")
              
         
             

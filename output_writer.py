@@ -30,6 +30,7 @@ class Output_Writer:
         self.algorithms = config.algorithms
         self.n_clusters = config.n_clusters
         self.date = config.date
+        self.date_fake_kmeans = config.date_fake_kmeans
         self.initial_date = config.initial_date
         self.output_name = config.output_name
         self.time = time
@@ -90,11 +91,14 @@ class Output_Writer:
                         # Valido sia per kmedoids che substitution
                         new_index = self.data.iloc[int(element['Index_representative_element'])].name 
                         object_clustering.centres_with_labels = object_clustering.centres_with_labels.rename(index={i:new_index})
-                        
+                        object_clustering.centres_with_labels = object_clustering.centres_with_labels.drop('Index_representative_element', axis=1)
+                elif self.date_fake_kmeans:
+                    new_date = pd.date_range(self.initial_date, periods=len(object_clustering.centres_with_labels), freq="D", name="Date")
+                    object_clustering.centres_with_labels.index = new_date
 
-                    object_clustering.centres_with_labels = object_clustering.centres_with_labels.drop('Index_representative_element', axis=1)
                     
-
+                                    
+                
 
 #%% Sezione per il print dei risultati
     # Metodo per printare i dati iniziali

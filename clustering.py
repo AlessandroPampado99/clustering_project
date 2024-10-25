@@ -82,6 +82,19 @@ class Clustering():
         if self.weight == "cluster_frequency":
             # Calcola il peso come numero di elementi per ogni cluster
             weights = np.bincount(self.data_with_labels['Index_clustering']) / n_years
+            
+            # Correggo i pesi uguali a zero in caso capitassero
+            # Trova se ci sono zeri e sostituiscili con 1
+            zero_indices = np.where(weights == 0)[0]  # Ottieni gli indici degli zeri
+            
+            if len(zero_indices) > 0:
+                # Se ci sono zeri, sostituisci con 1
+                weights[zero_indices] = 0.5
+                # Trova l'indice del massimo
+                max_index = np.argmax(weights)
+                # Sottrai 1 al massimo
+                weights[max_index] -= 0.5
+            
             self.centres_with_labels = pd.concat((self.centres_with_labels, pd.Series(weights).rename("Weight")), axis=1)
 
 #%% Sezione per la definizione dell'algoritmo

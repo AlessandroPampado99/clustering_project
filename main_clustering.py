@@ -20,7 +20,30 @@ from config import Config
 from output_writer import Output_Writer
 
 # Aggiungi la possibilità di cambiare autonomamente la frequenza
+choice = "base_case" # [base_case, class]
 
-config = Config()
-input_processing = Input_processing(config)
-output_writer = Output_Writer(input_processing.results, input_processing.data, input_processing.data_non_attributes, input_processing.time, config)
+if choice == "base_case":
+    config = Config()
+    input_processing = Input_processing(config)
+    output_writer = Output_Writer(input_processing.results, input_processing.data, input_processing.data_non_attributes, input_processing.time, input_processing.ssd, config)
+    
+
+
+
+####################################################################################################################
+################################################# OVERWRITE CONFIG #################################################
+####################################################################################################################
+elif choice == 'class':
+    algorithms = ['substitution', 'kmedoids']
+    extreme_scenarios = [{}]
+    
+    for algorithm in algorithms:
+        for extreme_scenario in extreme_scenarios:
+            config = Config()
+            config.algorithms = [algorithm]
+            config.extreme_scenario = extreme_scenario
+            
+            input_processing = Input_processing(config)
+            output_writer = Output_Writer(input_processing.results, input_processing.data, input_processing.data_non_attributes, input_processing.time, input_processing.ssd, config)
+
+        

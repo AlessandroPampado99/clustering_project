@@ -28,6 +28,7 @@ class Input_processing():
         for algorithm in self.parser.algorithms:
             self.results[algorithm] = dict()
         self.time = dict()
+        self.ssd = dict()
         
         self.init()
         
@@ -59,6 +60,7 @@ class Input_processing():
             self.data.columns = self.parser.nome_colonne
         if self.parser.nome_colonne_non_attributi != str():
             self.data_non_attributes = self.data[self.parser.nome_colonne_non_attributi]
+            # self.parser.nome_colonne_da_eliminare.extend(self.parser.nome_colonne_non_attributi)
         else:
             self.data_non_attributes = pd.DataFrame()
         if self.parser.nome_colonne_da_eliminare != str():
@@ -117,7 +119,8 @@ class Input_processing():
                     # ciclo per i diversi giorni rappresentativi (da implementare una funzionalità per far variare i criteria, nel caso)
                     self.results[algoritmo][str(n) + "_clusters"]  = Clustering(n, self.data, algoritmo, self.parser.timesteps, self.parser.attributes, self.parser.weight, self.parser.n_years, self.parser.extreme_scenario, self.parser.nome_colonne)
                     end = datetime.now()
-                    self.time[algoritmo + "_" + str(n) + "_clusters"] = str(end-beginning)            
+                    self.time[algoritmo + "_" + str(n) + "_clusters"] = str(end-beginning)
+                    self.ssd[algoritmo + "_" + str(n) + "_clusters"] = self.results[algoritmo][str(n) + "_clusters"].ssd
                     LOGGER.info(f"{algoritmo} con {n} clusters completato in {str(end-beginning)}s")
              
         

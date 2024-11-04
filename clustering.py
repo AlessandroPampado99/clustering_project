@@ -52,11 +52,13 @@ class Clustering():
         # Metodi per l'algoritmo di clustering vero e proprio
         if kmeans == "kmedoids":
             clustering = KMedoids(n_clusters=self.n_clusters, metric='euclidean', method='alternate', init='heuristic', random_state=None).fit(data_norm)
+            self.ssd = np.sum((np.linalg.norm(data_norm - clustering.cluster_centers_[clustering.labels_], axis=1)) ** 2)
             self.data_with_labels = pd.concat((data, pd.Series(clustering.labels_).rename("Index_clustering")), axis=1)
             self.kmedoids (clustering, data)
         else:
             # Processo di clustering
             clustering = KMeans(n_clusters=self.n_clusters, n_init='auto').fit(data_norm)
+            self.ssd = clustering.inertia_
             # Salvo i dati iniziali con il rispettivo cluster come attributo
             self.data_with_labels = pd.concat((data, pd.Series(clustering.labels_).rename("Index_clustering")), axis=1)
             

@@ -21,7 +21,7 @@ logging.getLogger("Clustering").setLevel(logging.WARNING)
 
 class Output_Writer:
     
-    def __init__(self, results, data, data_non_attributes, time, config):
+    def __init__(self, results, data, data_non_attributes, time, ssd, config):
         self.results = results
         self.data = data
         self.data_non_attributes = data_non_attributes
@@ -34,6 +34,7 @@ class Output_Writer:
         self.initial_date = config.initial_date
         self.output_name = config.output_name
         self.time = time
+        self.ssd = ssd
         self.attributes = config.attributes
         self.timesteps = config.timesteps
         self.plot_bool = config.plot
@@ -91,7 +92,7 @@ class Output_Writer:
                         # Valido sia per kmedoids che substitution
                         new_index = self.data.iloc[int(element['Index_representative_element'])].name 
                         object_clustering.centres_with_labels = object_clustering.centres_with_labels.rename(index={i:new_index})
-                        object_clustering.centres_with_labels = object_clustering.centres_with_labels.drop('Index_representative_element', axis=1)
+                    object_clustering.centres_with_labels = object_clustering.centres_with_labels.drop('Index_representative_element', axis=1)
                 elif self.date_fake_kmeans:
                     new_date = pd.date_range(self.initial_date, periods=len(object_clustering.centres_with_labels), freq="D", name="Date")
                     object_clustering.centres_with_labels.index = new_date
@@ -114,6 +115,12 @@ class Output_Writer:
      
     # Metodo per printare i risultati
     def print_results(self, now):
+        self.time = pd.DataFrame.from_dict(self.time, orient='index', columns=["computational time"])
+        self.ssd = pd.DataFrame.from_dict(self.ssd, orient='index', columns=["SSD"])
+        with pd.ExcelWriter("./output/" + now + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:
+            self.time.to_excel(writer, sheet_name= "computational_time")
+            self.ssd.to_excel(writer, sheet_name= "SSD")
+        
         index = dict()
         vecchio_now = datetime.now()
         with pd.ExcelWriter("./output/" + now + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:                
@@ -132,9 +139,6 @@ class Output_Writer:
                     
                     LOGGER.info(f"Stampati i risultati di {algorithm} con {n_days} clusters in {datetime.now() - vecchio_now}")
          
-        self.time = pd.DataFrame.from_dict(self.time, orient='index', columns=["computational time"])
-        with pd.ExcelWriter("./output/" + now + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:
-            self.time.to_excel(writer, sheet_name= "computational_time")
     
 #%% Sezione per la generazione dei grafici
     # Metodo per plottare i grafici

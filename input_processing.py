@@ -60,7 +60,7 @@ class Input_processing():
             self.data.columns = self.parser.nome_colonne
         if self.parser.nome_colonne_non_attributi != str():
             self.data_non_attributes = self.data[self.parser.nome_colonne_non_attributi]
-            # self.parser.nome_colonne_da_eliminare.extend(self.parser.nome_colonne_non_attributi)
+            self.parser.nome_colonne_da_eliminare.extend(self.parser.nome_colonne_non_attributi)
         else:
             self.data_non_attributes = pd.DataFrame()
         if self.parser.nome_colonne_da_eliminare != str():

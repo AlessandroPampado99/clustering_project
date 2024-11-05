@@ -105,12 +105,14 @@ class Output_Writer:
     # Metodo per printare i dati iniziali
     def print_data(self, now):
         vecchio_now = datetime.now()
+        # Stampo tutti i dati (attributi e non)
+        data_total = pd.concat((self.data, self.data_non_attributes), axis=1)
         intro = pd.DataFrame(["Segue il Dataset dei dati iniziali"])
         with pd.ExcelWriter("./output/" + now + "/" + self.output_name, engine="openpyxl") as writer:
             intro.to_excel(writer, sheet_name= "Data", header=False, index=False) # Stampo l'intro nella prima pagina
         with pd.ExcelWriter("./output/" + now + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:
             # Apro in modalità append e con overlay, in modo da scrivere sopra ad uno stesso foglio e non sovrascrivere
-            self.data.to_excel(writer, sheet_name = "Data", float_format="%.4f", startrow = 1)  
+            data_total.to_excel(writer, sheet_name = "Data", float_format="%.4f", startrow = 1)  
         LOGGER.info(f"Stampati i dati in {datetime.now()-vecchio_now}s")
      
     # Metodo per printare i risultati

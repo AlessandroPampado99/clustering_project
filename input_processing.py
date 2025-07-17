@@ -101,7 +101,6 @@ class Input_processing():
                     data_reshaped = np.concatenate((data_reshaped,column_reshaped), axis=1)
                 self.data_non_attributes = pd.DataFrame(data_reshaped[:,1:])
                 self.data_non_attributes.columns = nome_colonne_non_attributi
-        a = 5
     
     def clustering_process(self):
         # Ciclo for per i diversi algoritmi

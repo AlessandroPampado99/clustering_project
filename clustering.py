@@ -16,7 +16,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 from sklearn.cluster import KMeans
 from sklearn_extra.cluster import KMedoids
 from sklearn import metrics
-from yellowbrick.cluster import SilhouetteVisualizer, KElbowVisualizer
+# from yellowbrick.cluster import SilhouetteVisualizer, KElbowVisualizer
 from sklearn.preprocessing import MinMaxScaler
 
 ###############################################################################################################
@@ -57,7 +57,7 @@ class Clustering():
             self.kmedoids (clustering, data)
         else:
             # Processo di clustering
-            clustering = KMeans(n_clusters=self.n_clusters, n_init='auto').fit(data_norm)
+            clustering = KMeans(n_clusters=self.n_clusters, init='random', n_init='auto').fit(data_norm)
             self.ssd = clustering.inertia_
             # Salvo i dati iniziali con il rispettivo cluster come attributo
             self.data_with_labels = pd.concat((data, pd.Series(clustering.labels_).rename("Index_clustering")), axis=1)
@@ -72,7 +72,7 @@ class Clustering():
         for key, list_values in extreme_periods.items():
             for value in list_values:
                 if "Replacing".casefold() in value.casefold():
-                    self.extreme_periods_replacing(key, value, kmeans)
+                    self.extreme_periods_replacing(key, value, kmeans, clustering, data_norm, data)
                 elif "Adding".casefold() in value.casefold():
                     self.extreme_periods_adding(key, value, kmeans, data_norm)
                 
@@ -87,7 +87,7 @@ class Clustering():
             
             # Correggo i pesi uguali a zero in caso capitassero
             # Trova se ci sono zeri e sostituiscili con 1
-            zero_indices = np.where(weights == 0)[0]  # Ottieni gli indici degli zeri
+            zero_indices = np.concatenate((np.where(weights==0)[0], np.where(np.isnan(weights))[0]))
             
             if len(zero_indices) > 0:
                 # Se ci sono zeri, sostituisci con 1
@@ -128,6 +128,11 @@ class Clustering():
         t = pd.DataFrame({"ind_rep_row": np.where(clustering.transform(data_norm) == clustering.transform(data_norm).min(axis=0))[0], "Index_clustering": np.where(clustering.transform(data_norm) == clustering.transform(data_norm).min(axis=0))[1]})
         t = t.drop_duplicates(subset=['Index_clustering'], keep='first') # Per evitare di avere più clusters del dovuto
         self.centres_with_labels = data.iloc[t["ind_rep_row"]].set_index(t["Index_clustering"])
+        
+        centres_with_labels_norm = (self.centres_with_labels - data.min(axis=0)) / (data.max(axis=0) - data.min(axis=0))
+        centres_with_labels_norm = centres_with_labels_norm.fillna(0)
+        self.ssd = np.sum(np.linalg.norm(data_norm - centres_with_labels_norm.loc[clustering.labels_].values, axis=1) ** 2)
+        
         t = t.set_index("Index_clustering")
         # Aggiungo etichetta per sottolineare di quale cluster sono gli elementi rappresentativi
         self.centres_with_labels = pd.concat((self.centres_with_labels, t["ind_rep_row"].rename("Index_representative_element")), axis=1)
@@ -174,7 +179,7 @@ class Clustering():
     
 
 # Metodo per il replacing criterion
-    def extreme_periods_replacing(self, key, value, kmeans):
+    def extreme_periods_replacing(self, key, value, kmeans, clustering, data_norm, data):
         self.n_extreme_periods += 1
         
         extreme_element = self.extreme_period_definition(key, value)
@@ -185,6 +190,10 @@ class Clustering():
         elif kmeans == "kmedoids":
             extreme_element = pd.concat((extreme_element, pd.Series(extreme_element.name).set_axis(["Index_representative_element"])))
             self.centres_with_labels.iloc [np.where(self.centres_with_labels['Index_clustering'] == extreme_element['Index_clustering'])[0][0]] = extreme_element
+            centres_with_labels_norm = self.centres_with_labels.drop(['Index_clustering', 'Index_representative_element'], axis=1)
+            centres_with_labels_norm = (centres_with_labels_norm - data.min(axis=0)) / (data.max(axis=0) - data.min(axis=0))
+            centres_with_labels_norm = centres_with_labels_norm.fillna(0)
+            self.ssd = np.sum(np.linalg.norm(data_norm - centres_with_labels_norm.loc[clustering.labels_].values, axis=1) ** 2)
         elif kmeans == "substitution":
             self.centres_with_labels = self.centres_with_labels.set_index("Index_representative_element")
             self.centres_with_labels.iloc [np.where(self.centres_with_labels['Index_clustering'] == extreme_element['Index_clustering'])[0][0]] = extreme_element
@@ -221,8 +230,11 @@ class Clustering():
         # Da commentare e da pulire le righe in cui vai a concatenare il tutto
         
         for row, element in enumerate(data_norm):
-            self.data_with_labels.loc[row, 'Index_clustering'] = np.where(np.sum((data_norm[row] - centres)**2, axis=1)**1/2 == (np.sum((data_norm[row] - centres)**2, axis=1)**1/2).min())[0][0]
-        
+            arg_min_dist = np.argmin(np.sqrt(np.sum((data_norm[row] - centres)**2, axis=1)))
+            if arg_min_dist == len(centres) or arg_min_dist == len(centres)-1:
+                self.data_with_labels.loc[row, 'Index_clustering'] = arg_min_dist
+          
+          
 ###############################################################################################################
 ########################################## AVERAGE PROFILES ###################################################
 ###############################################################################################################

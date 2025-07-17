@@ -39,6 +39,7 @@ class Output_Writer:
         self.timesteps = config.timesteps
         self.plot_bool = config.plot
         self.extreme_scenario = config.extreme_scenario
+        self.output_name_folder = config.output_name_folder
         
         self.init()
 
@@ -53,7 +54,11 @@ class Output_Writer:
         # Genero la data odierna con ora annessa
         now = datetime.now() # current date and time
         now = str(now.strftime("%m-%d-%Y_%H-%M-%S"))
-        output_path = r"./output/" + now
+        
+        if self.output_name_folder != str():
+            output_path = r"./output/" + self.output_name_folder
+        else:
+            output_path = r"./output/" + now
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         
@@ -68,17 +73,31 @@ class Output_Writer:
         if self.date:
             self.add_date()
             
-        
         # Stampo i risultati
-        self.print_data(now)
+        self.print_data(output_path)
         
-        self.print_results(now)
+        self.print_results(output_path)
+        
+        self.print_data_with_labels(output_path)
+        
         
         
 #%% Sezione per gestire le date come indici dei dataframe
     def add_date(self): 
-        Date = pd.date_range(self.initial_date, periods=len(self.data), freq="D", name="Date") # scelgo la data iniziale e la frequenza
-        Date = [str(Date.tolist()[i]).split(" ")[0] for i in range (0, len(Date))] # Elimino l'ora dalla data
+        # Numero di periodi desiderato, escludendo i 29 febbraio
+        num_periods = len(self.data)
+
+        # Stimiamo un numero maggiore di date per includere i 29 febbraio
+        extra_days = int(num_periods * 0.003)  # circa un giorno in più ogni 400, per compensare i 29 febbraio
+        date_range = pd.date_range(self.initial_date, periods=num_periods + extra_days, freq="D", name="Date")
+
+        # Filtriamo per rimuovere i 29 febbraio
+        date_range_no_leap = date_range[~((date_range.month == 2) & (date_range.day == 29))]
+
+        # Prendiamo solo i primi `num_periods` giorni
+        date_range_no_leap = date_range_no_leap[:num_periods]
+        
+        Date = [str(date_range_no_leap.tolist()[i]).split(" ")[0] for i in range (0, len(date_range_no_leap))] # Elimino l'ora dalla data
         self.data.index = Date
         
         if self.nome_colonne_non_attributi != str():
@@ -103,44 +122,79 @@ class Output_Writer:
 
 #%% Sezione per il print dei risultati
     # Metodo per printare i dati iniziali
-    def print_data(self, now):
+    def print_data(self, output_path):
         vecchio_now = datetime.now()
         # Stampo tutti i dati (attributi e non)
         data_total = pd.concat((self.data, self.data_non_attributes), axis=1)
         intro = pd.DataFrame(["Segue il Dataset dei dati iniziali"])
-        with pd.ExcelWriter("./output/" + now + "/" + self.output_name, engine="openpyxl") as writer:
+        with pd.ExcelWriter(output_path + "/" + self.output_name, engine="openpyxl") as writer:
             intro.to_excel(writer, sheet_name= "Data", header=False, index=False) # Stampo l'intro nella prima pagina
-        with pd.ExcelWriter("./output/" + now + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:
+        with pd.ExcelWriter(output_path + "/" + self.output_name, mode = "a",  engine="openpyxl", if_sheet_exists="overlay") as writer:
             # Apro in modalità append e con overlay, in modo da scrivere sopra ad uno stesso foglio e non sovrascrivere
             data_total.to_excel(writer, sheet_name = "Data", float_format="%.4f", startrow = 1)  
         LOGGER.info(f"Stampati i dati in {datetime.now()-vecchio_now}s")
      
     # Metodo per printare i risultati
-    def print_results(self, now):
+    def print_results(self, output_path):
         self.time = pd.DataFrame.from_dict(self.time, orient='index', columns=["computational time"])
         self.ssd = pd.DataFrame.from_dict(self.ssd, orient='index', columns=["SSD"])
-        with pd.ExcelWriter("./output/" + now + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:
+        with pd.ExcelWriter(output_path + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:
             self.time.to_excel(writer, sheet_name= "computational_time")
             self.ssd.to_excel(writer, sheet_name= "SSD")
         
         index = dict()
         vecchio_now = datetime.now()
-        with pd.ExcelWriter("./output/" + now + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:                
+        with pd.ExcelWriter(output_path + "/" + self.output_name, mode = "a", engine="openpyxl", if_sheet_exists="overlay") as writer:                
             for algorithm, list_results in self.results.items():
                 for n_days, object_clustering in list_results.items():
                     vecchio_now = datetime.now()
                     if algorithm == self.algorithms[0]: # Se ho il primo algoritmo, stampo l'intro come prima riga
-                        intro = pd.DataFrame(["Seguono i clusters per gli algoritmi, in ordine, " + "-".join(self.algorithms)])
-                        intro.to_excel(writer, sheet_name= n_days, header=False, index=False)
-                        index[n_days] = 2
-                    intro = pd.DataFrame(["Algoritmo " + algorithm])
-                    intro.to_excel(writer, sheet_name= n_days, header=False, index=False, startrow=index[n_days])
+                        index[n_days] = -1
                     index[n_days] = index[n_days] + 1
                     object_clustering.centres_with_labels.to_excel(writer, sheet_name=n_days, float_format="%4f", startrow=index[n_days])
                     index[n_days] = index[n_days] + len(object_clustering.centres_with_labels) + 2
                     
                     LOGGER.info(f"Stampati i risultati di {algorithm} con {n_days} clusters in {datetime.now() - vecchio_now}")
-         
+      
+        
+    def print_data_with_labels(self, output_path):
+        """
+        Prints data_with_labels + data_non_attributes for each algorithm and n_days 
+        into a new Excel file with same sheet logic as print_results.
+        """
+        index = dict()
+        output_file = self.output_name.replace(".xlsx", "_data_total.xlsx")
+        output_full_path = os.path.join(output_path, output_file)
+    
+        for algorithm, list_results in self.results.items():
+            for n_days, object_clustering in list_results.items():
+    
+                if algorithm == self.algorithms[0]:
+                    index[n_days] = -1
+                index[n_days] = index[n_days] + 1
+    
+                df_with_labels = pd.concat(
+                    (object_clustering.data_with_labels, self.data_non_attributes), axis=1
+                )
+    
+                # Scegli il mode
+                file_exists = os.path.exists(output_full_path)
+                mode = "a" if file_exists else "w"
+    
+                # Usa ExcelWriter in modo compatibile
+                if mode == "a":
+                    writer = pd.ExcelWriter(output_full_path, mode=mode, engine="openpyxl", if_sheet_exists="overlay")
+                else:
+                    writer = pd.ExcelWriter(output_full_path, mode=mode, engine="openpyxl")
+    
+                with writer:
+                    df_with_labels.to_excel(writer, sheet_name=n_days, float_format="%.4f", startrow=index[n_days])
+                    index[n_days] += len(df_with_labels) + 2
+
+
+
+
+
     
 #%% Sezione per la generazione dei grafici
     # Metodo per plottare i grafici

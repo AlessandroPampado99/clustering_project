@@ -13,7 +13,7 @@ from configparser import ConfigParser
 class Config():
     def __init__(self):
         self.parser = ConfigParser()
-        self.parser.read("C:\\Users\\aless\\Desktop\\PhD_Pisa\\2024_01_08\\clustering_project\\config\\application.ini")
+        self.parser.read("config/application.ini", encoding="latin-1")
         
         self.init()
         
